@@ -23,14 +23,36 @@ def cal_pairwise_consistency(X):
     :return: pairwise_consistency: (num_graph, num_graph)
     """
     n, _, m, _ = X.shape
+
+    SLOW_pointwise = np.zeros((n, n))
+    SLOW_matmul = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            cnt_pointwise = 0
+            cnt_matmul = 0
+            for k in range(n):
+                cnt_pointwise += np.sum(np.abs(X[i, j] - X[i, k] * X[k, j]))
+                cnt_matmul += np.sum(np.abs(X[i, j] - np.matmul(X[i, k], X[k, j])))
+            SLOW_pointwise[i, j] = 1 - cnt_pointwise / (2 * n * m)
+            SLOW_matmul[i, j] = 1 - cnt_matmul / (2 * n * m)
+
     # code 1
-    # X_t = X.transpose((1, 0, 2, 3))
-    # pairwise_consistency = 1 - np.abs(X[:, :, None] - X_t[None, ...] * X[:, None]).sum((2, 3, 4)) / (2 * n * m)
+    X_t = X.transpose((1, 0, 2, 3))
+    pairwise_consistency = 1 - np.abs(X[:, :, None] - X_t[None, ...] * X[:, None]).sum((2, 3, 4)) / (2 * n * m)
+
     # code 2
     my_pairwise_consistency = 1 - np.sum([np.abs(X - np.matmul(X[:, k], X[k, ...])).sum((2, 3)) for k in range(n)],
                                          (0,)) / (2 * n * m)
+    #bug: X:(n,n,m,m), X[:, k]:(n,m,m), X[k, ...]:(n,m,m), and np.matmul(X[:, k], X[k, ...]) is still (n,m,m) !
 
-    # assert np.all(my_pairwise_consistency == pairwise_consistency)
+    # code 3
+    matmul_pairwise_consistency = 1 - np.sum([np.abs(X - np.matmul(X[:, None, k], X[k, None, ...])).sum((2, 3)) for k in range(n)],
+                                         (0,)) / (2 * n * m)
+
+    print((pairwise_consistency == SLOW_pointwise).all())
+    print((my_pairwise_consistency == SLOW_matmul).all())
+    print((matmul_pairwise_consistency == SLOW_matmul).all())
+
     return my_pairwise_consistency
 
 
@@ -52,3 +74,8 @@ def mgm_floyd(X, K, num_graph, num_node):
         X = update * Xopt + (1 - update) * X
 
     return X
+
+
+if __name__ == '__main__':
+    X = np.random.randint(0, 10, (2, 2, 3, 3))
+    cal_pairwise_consistency(X)
