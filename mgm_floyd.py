@@ -1,28 +1,38 @@
 import numpy as np
+
 LAMBDA = 0.3
 
+
 def cal_affinity_score(X, K):
-    '''
+    """
     :param X: matching results, (num_graph, num_graph, num_node, num_node)
     :param K: affinity matrix, (num_graph, num_graph, num_node^2, num_node^2)
     :return: normalized affinity score, (num_graph, num_graph)
-    '''
+    """
     n, _, m, _ = X.shape
     vx = np.reshape(X.transpose((0, 1, 3, 2)), newshape=(n, n, -1, 1))
     vxT = vx.transpose((0, 1, 3, 2))
-    affinity_score = np.matmul(np.matmul(vxT, K), vx) # in shape (n, n, 1, 1)
-    normalized_affinity_score = affinity_score.reshape(n,n)/np.max(affinity_score)
+    affinity_score = np.matmul(np.matmul(vxT, K), vx)  # in shape (n, n, 1, 1)
+    normalized_affinity_score = affinity_score.reshape(n, n) / np.max(affinity_score)
     return normalized_affinity_score
 
+
 def cal_pairwise_consistency(X):
-    '''
+    """
     :param X: matching results, (num_graph, num_graph, num_node, num_node)
     :return: pairwise_consistency: (num_graph, num_graph)
-    '''
+    """
     n, _, m, _ = X.shape
-    X_t = X.transpose((1, 0, 2, 3))
-    pairwise_consistency = 1 - np.abs(X[:, :, None] - X_t[None, ...] * X[:, None]).sum((2, 3, 4))/ (2 * n * m)
-    return pairwise_consistency
+    # code 1
+    # X_t = X.transpose((1, 0, 2, 3))
+    # pairwise_consistency = 1 - np.abs(X[:, :, None] - X_t[None, ...] * X[:, None]).sum((2, 3, 4)) / (2 * n * m)
+    # code 2
+    my_pairwise_consistency = 1 - np.sum([np.abs(X - np.matmul(X[:, k], X[k, ...])).sum((2, 3)) for k in range(n)],
+                                         (0,)) / (2 * n * m)
+
+    # assert np.all(my_pairwise_consistency == pairwise_consistency)
+    return my_pairwise_consistency
+
 
 def mgm_floyd(X, K, num_graph, num_node):
     """
