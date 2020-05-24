@@ -58,8 +58,8 @@ def cal_pairwise_consistency(X):
     """
     n, _, m, _ = X.shape
     X_t = X.transpose((1, 0, 2, 3)) # so that X_t[j,k] = X[k,j]
-    pairwise_consistency = 1 - np.abs(X[:, :, None] - np.matmul(X[:, None], X_t[None, ...]))\
-        .sum((2, 3, 4)) / (2 * n * m)
+    pairwise_consistency = 1 - np.abs(X[:, :, None] - \
+    	  np.matmul(X[:, None], X_t[None, ...]))sum((2, 3, 4)) / (2 * n * m)
     # X[:,None]*X_t[None,...] is X[i,k]*X[k,j] (matmul)
     return pairwise_consistency
 ```
@@ -95,9 +95,12 @@ def mgm_floyd(X, K, num_graph, num_node):
     for k in range(num_graph):
         pairwise_consistency = cal_pairwise_consistency(X)
         Xopt = np.matmul(X[:, None, k], X[None, k, :])
-        Sorg = (1 - LAMBDA) * cal_affinity_score(X, K) + LAMBDA * pairwise_consistency
-        Sopt = (1 - LAMBDA) * cal_affinity_score(Xopt, K) + LAMBDA * np.sqrt(  # sqrt pc for approximate
-            np.matmul(pairwise_consistency[:, k][:, None], pairwise_consistency[k, :][None, ...]))
+        Sorg = (1 - LAMBDA) * cal_affinity_score(X, K) + \
+        	  LAMBDA * pairwise_consistency
+        Sopt = (1 - LAMBDA) * cal_affinity_score(Xopt, K) + \
+        	  LAMBDA * np.sqrt(\  # sqrt pc for approximate
+            np.matmul(pairwise_consistency[:, k][:, None], \
+            pairwise_consistency[k, :][None, ...]))
         update = (Sopt > Sorg)[:, :, None, None]
         X = update * Xopt + (1 - update) * X
 
@@ -130,18 +133,23 @@ def mgm_spfa(K, X, num_graph, num_node):
         Gx = q.get()
         outnumber += 1
 
-        Xopt = np.matmul(X[:, Gx][:, None], X[Gx, :][None, ...])  # X_opt[y,N]=X[y,x]·X[x,N]
-        Sorg = (1 - LAMBDA) * cal_affinity_score(X, K) + LAMBDA * np.sqrt(pairwise_consistency)  # sqrt for pc
+        Xopt = np.matmul(X[:, Gx][:, None], X[Gx, :][None, ...])
+        # X_opt[y,N]=X[y,x]·X[x,N]
+        Sorg = (1 - LAMBDA) * cal_affinity_score(X, K) + \
+        	  LAMBDA * np.sqrt(pairwise_consistency)  # sqrt for pc
         Sopt = (1 - LAMBDA) * cal_affinity_score(Xopt, K) + LAMBDA * np.sqrt(
-            np.matmul(pairwise_consistency[:, Gx][:, None], pairwise_consistency[Gx, :][None, ...]))
+            np.matmul(pairwise_consistency[:, Gx][:, None], \
+            pairwise_consistency[Gx, :][None, ...]))
 
         Sorg = Sorg[:, num_graph - 1, None, None]
         Sopt = Sopt[:, num_graph - 1, None, None] # only consider the new added one
         update = (Sopt > Sorg)
         update[Gx] = False # skip Gx the graph itself
 
-        X[:, num_graph - 1] = update * Xopt[:, num_graph - 1] + (1 - update) * X[:, num_graph - 1]
-        X[num_graph - 1, :] = update * Xopt[num_graph - 1, :].transpose((0, 2, 1)) + (1 - update) * X[num_graph - 1, :]
+        X[:, num_graph - 1] = update * Xopt[:, num_graph - 1] + \
+        	  (1 - update) * X[:, num_graph - 1]
+        X[num_graph - 1, :] = update * Xopt[num_graph - 1, :].transpose((0, 2, 1)) + \
+        	  (1 - update) * X[num_graph - 1, :]
 
         [q.put(y) for y in range(num_graph) if update[y]]  # add Gy into Q
 
@@ -150,10 +158,13 @@ def mgm_spfa(K, X, num_graph, num_node):
         if outnumber > num_graph ** 2:
             break
 
-    Xopt = np.matmul(X[:, num_graph - 1][:, None], X[num_graph - 1, :][None, ...])  # X_opt[x,y]=X[x,N]·X[N,y]
-    Sorg = (1 - LAMBDA) * cal_affinity_score(X, K) + LAMBDA * np.sqrt(pairwise_consistency)  # sqrt for pc
+    Xopt = np.matmul(X[:, num_graph - 1][:, None], X[num_graph - 1, :][None, ...])
+    # X_opt[x,y]=X[x,N]·X[N,y]
+    Sorg = (1 - LAMBDA) * cal_affinity_score(X, K) + \
+    	  LAMBDA * np.sqrt(pairwise_consistency)  # sqrt for pc
     Sopt = (1 - LAMBDA) * cal_affinity_score(Xopt, K) + LAMBDA * np.sqrt(
-        np.matmul(pairwise_consistency[:, num_graph - 1][:, None], pairwise_consistency[num_graph - 1, :][None, ...]))
+        np.matmul(pairwise_consistency[:, num_graph - 1][:, None],\
+        pairwise_consistency[num_graph - 1, :][None, ...]))
     update = (Sopt > Sorg)[:, :, None, None]
     update[num_graph - 1] = False
     update[:, num_graph - 1] = False #Gx, Gy in H\GN
