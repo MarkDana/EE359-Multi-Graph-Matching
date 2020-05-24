@@ -180,3 +180,110 @@ From the aspect of matching chain combination, it should be matmul here to maint
 
 -
 ### 3. Results Screenshots
+<center>
+<table>
+<thead>
+  <tr>
+    <th colspan="2">Offline Floyd</th>
+    <th>Car</th>
+    <th>Motorbike</th>
+    <th>Face</th>
+    <th>Winebottle</th>
+    <th>Duck</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td rowspan="2">Time Cost<br>(s)</td>
+    <td>Required</td>
+    <td>4.384</td>
+    <td>4.227</td>
+    <td>4.220</td>
+    <td>4.339</td>
+    <td>4.209</td>
+  </tr>
+  <tr>
+    <td>Ours</td>
+    <td>1.999</td>
+    <td>1.950</td>
+    <td>1.903</td>
+    <td>1.889</td>
+    <td>1.938</td>
+  </tr>
+  <tr>
+    <td rowspan="2">Accuracy<br>(%)</td>
+    <td>Required</td>
+    <td>60.46</td>
+    <td>80.51</td>
+    <td>91.08</td>
+    <td>72.20</td>
+    <td>57.69</td>
+  </tr>
+  <tr>
+    <td>Ours</td>
+    <td>82.56</td>
+    <td>92.27</td>
+    <td>95.34</td>
+    <td>91.24</td>
+    <td>76.93</td>
+  </tr>
+</tbody>
+</table>
+
+<table>
+<thead>
+  <tr>
+    <th colspan="2">Online SPFA</th>
+    <th>Car</th>
+    <th>Motorbike</th>
+    <th>Face</th>
+    <th>Winebottle</th>
+    <th>Duck</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td rowspan="2">Time Cost<br>(s)</td>
+    <td>Required</td>
+    <td>2.190</td>
+    <td>2.179</td>
+    <td>2.023</td>
+    <td>2.631</td>
+    <td>2.135</td>
+  </tr>
+  <tr>
+    <td>Ours</td>
+    <td>0.828</td>
+    <td>0.815</td>
+    <td>0.857</td>
+    <td>0.821</td>
+    <td>0.850</td>
+  </tr>
+  <tr>
+    <td rowspan="2">Accuracy<br>(%)</td>
+    <td>Required</td>
+    <td>63.32</td>
+    <td>83.43</td>
+    <td>91.41</td>
+    <td>75.23</td>
+    <td>59.05</td>
+  </tr>
+  <tr>
+    <td>Ours</td>
+    <td>71.74</td>
+    <td>88.56</td>
+    <td>93.94</td>
+    <td>84.19</td>
+    <td>68.64</td>
+  </tr>
+</tbody>
+</table>
+</center>
+<center><img src="imgs/floyd_res1.png" width=40%/> <img src="imgs/floyd_res2.png" width=40%/>
+
+<font color="grey">Offline test using MGM-floyd passed</font>
+</center>
+<center><img src="imgs/spfa_res1.png" width=18%/> <img src="imgs/spfa_res2.png" width=18%/> <img src="imgs/spfa_res3.png" width=18%/> <img src="imgs/spfa_res4.png" width=18%/> <img src="imgs/spfa_res5.png" width=18%/>
+
+<font color="grey">Online test using MGM-SPFA passed</font>
+</center>
