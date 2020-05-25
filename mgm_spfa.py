@@ -5,7 +5,7 @@ sys.path.append('../')
 from src.mgm_floyd import *
 import queue
 
-LAMBDA_SPFA = 0.5
+LAMBDA_SPFA = 0.3
 
 
 def cal_pairwise_consistency_to_N(X):
@@ -133,12 +133,12 @@ def mgm_spfa(K, X, num_graph, num_node):
     Sorg = (1 - LAMBDA_SPFA) * cal_affinity_score(X, K) + LAMBDA_SPFA * pairwise_consistency  # sqrt for pc
     # Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score(Xopt, K) + LAMBDA_SPFA * np.sqrt(
     #     np.matmul(pairwise_consistency[:, num_graph - 1][:, None], pairwise_consistency[num_graph - 1, :][None, ...]))
-    Sopt = (1 - LAMBDA) * cal_affinity_score(Xopt, K) + LAMBDA * cal_pairwise_consistency(Xopt)
+    Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score(Xopt, K) + LAMBDA_SPFA * cal_pairwise_consistency(Xopt)
     update = (Sopt > Sorg)[:, :, None, None]
     update[num_graph - 1] = False
     update[:, num_graph - 1] = False  # Gx, Gy in H\GN
-    # for i in range(num_graph):
-    #     update[i, i] = False
+    for i in range(num_graph):
+        update[i, i] = False
     X = update * Xopt + (1 - update) * X
 
     return X
