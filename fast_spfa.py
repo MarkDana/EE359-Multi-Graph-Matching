@@ -16,7 +16,6 @@ def fast_spfa(K, X, num_graph, num_node):
     :param num_node: number of node, int
     :return: X, matching results, match graph_m to {graph_1, ... , graph_m-1)
     """
-    X0 = np.max(cal_affinity_score(X, K))
     M = max(1, num_graph // CMIN)
 
     for k in range(num_graph):
@@ -25,8 +24,7 @@ def fast_spfa(K, X, num_graph, num_node):
         Sopt = cal_affinity_score(Xopt, K)
 
         update = (Sopt > Sorg)[:, :, None, None]
-        for i in range(num_graph):
-            update[i, i] = False
+        update[np.diag_indices(num_graph)] = False
         X = update * Xopt + (1 - update) * X
 
     for ci in range(M):
@@ -36,20 +34,15 @@ def fast_spfa(K, X, num_graph, num_node):
                 coord.append(num_graph - 1)
         else:
             coord = [i for i in range(ci * CMIN, num_graph)]
-        # print(coord)
         Xc = X[coord, ...][:, coord]
-        # print(Xc.shape)
         Kc = K[coord, ...][:, coord]
 
-        q = []
+        q = [i for i in range(len(coord) - 1)]
         outnumber = 0
-        [q.append(i) for i in range(len(coord) - 1)]
-        # pairwise_consistency = cal_pairwise_consistency(X)
         while len(q) > 0:
             Gx = q[0]
             del q[0]
             outnumber += 1
-
             Xopt = np.matmul(Xc[:, Gx, None], Xc[Gx, None, :])  # X_opt[y,N]=X[y,x]·X[x,N]
             for y in range(len(coord) - 1):
                 if y == Gx:
@@ -70,12 +63,10 @@ def fast_spfa(K, X, num_graph, num_node):
     Sorg = (1 - LAMBDA_FAST) * cal_affinity_score(X, K) + LAMBDA_FAST * pairwise_consistency  # sqrt for pc
     Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score(Xopt, K) + LAMBDA_SPFA * np.sqrt(
         np.matmul(pairwise_consistency[:, num_graph - 1][:, None], pairwise_consistency[num_graph - 1, :][None, ...]))
-    # Sopt = (1 - LAMBDA_FAST) * cal_affinity_score(Xopt, K) + LAMBDA_FAST * cal_pairwise_consistency(Xopt)
     update = (Sopt > Sorg)[:, :, None, None]
     update[num_graph - 1] = False
     update[:, num_graph - 1] = False  # Gx, Gy in H\GN
-    for i in range(num_graph):
-        update[i, i] = False
+    update[np.diag_indices(num_graph)] = False
     X = update * Xopt + (1 - update) * X
 
     return X

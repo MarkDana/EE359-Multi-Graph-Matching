@@ -25,11 +25,8 @@ def cal_pairwise_consistency(X):
     """
     n, _, m, _ = X.shape
     X_t = X.transpose((1, 0, 2, 3))
-    # matmul:
     pairwise_consistency = 1 - np.abs(X[:, :, None] - np.matmul(X[:, None], X_t[None, ...])).sum((2, 3, 4)) / (
             2 * n * m)
-    # point-wise:
-    # pairwise_consistency = 1 - np.abs(X[:, :, None] - X_t[None, ...] * X[:, None]).sum((2, 3, 4)) / (2 * n * m)
     return pairwise_consistency
 
 
@@ -50,31 +47,18 @@ def mgm_floyd(X, K, num_graph, num_node):
         Sopt = cal_affinity_score(Xopt, K)
 
         update = (Sopt > Sorg)[:, :, None, None]
-        for i in range(num_graph):
-            update[i, i] = False
+        update[np.diag_indices(num_graph)] = False
         X = update * Xopt + (1 - update) * X
-        # print(Xopt.shape, update.shape )
-
-        # for i in range(num_graph):
-        #     for j in range(num_graph):
-        #         if i != j and Sopt[i, j] > Sorg[i, j]:
-        #             X[i, j] = Xopt[i, j]
-        #
-        # assert (X1==X).all()
 
     for k in range(num_graph):
         pairwise_consistency = cal_pairwise_consistency(X)
         Xopt = np.matmul(X[:, k, None], X[k, None, :])
         Sorg = (1 - LAMBDA) * cal_affinity_score(X, K) + LAMBDA * pairwise_consistency
-        # Sopt = (1 - LAMBDA) * cal_affinity_score(Xopt, K,X0) + LAMBDA * np.sqrt(  # sqrt pc for approximate
-        #     np.matmul(pairwise_consistency[:, k][:, None], pairwise_consistency[k, :][None, ...]))
-        Sopt = (1 - LAMBDA) * cal_affinity_score(Xopt, K) + LAMBDA * cal_pairwise_consistency(Xopt)
+        Sopt = (1 - LAMBDA) * cal_affinity_score(Xopt, K) + LAMBDA * np.sqrt(  # sqrt pc for approximate
+            np.matmul(pairwise_consistency[:, k][:, None], pairwise_consistency[k, :][None, ...]))
+        # Sopt = (1 - LAMBDA) * cal_affinity_score(Xopt, K) + LAMBDA * cal_pairwise_consistency(Xopt)
         update = (Sopt > Sorg)[:, :, None, None]
-        for i in range(num_graph):
-            update[i, i] = False
+        update[np.diag_indices(num_graph)] = False
         X = update * Xopt + (1 - update) * X
-
-    for i in range(num_graph):
-        assert np.all(X[i, i] == np.eye(num_node)), X[i, i]
 
     return X
