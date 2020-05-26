@@ -39,7 +39,7 @@ def cal_affinity_score(X, K):
     normalized_affinity_score = affinity_score.reshape(n, n) / X0)
     return normalized_affinity_score
 ```
-Note that affinity score is normalized to range `(0,1]` to be consistent with pairwise consistency. We use the normalization factor X0 to be the maximal affinity score of the raw input $X$, as proposed in CAO.
+Note that affinity score is normalized to range `(0,1]` to be consistent with pairwise consistency. We use the normalization factor `X0` to be the maximal affinity score of the raw input $X$, as proposed in CAO.
 
 + **Pairwise Consistency**
 
@@ -105,8 +105,7 @@ def mgm_floyd(X, K, num_graph, num_node):
             np.matmul(pairwise_consistency[:, k][:, None], \
             pairwise_consistency[k, :][None, ...]))
         update = (Sopt > Sorg)[:, :, None, None]
-        for i in range(num_graph):
-          update[i, i] = False
+        update[np.diag_indices(num_graph)] = False
         X = update * Xopt + (1 - update) * X
 
     return X
@@ -123,55 +122,56 @@ MGM-SPFA is based on SPFA, a single-source shortest path algorithm. It helps sol
 
 ```python
 def mgm_spfa(K, X, num_graph, num_node):
-  """
-  :param K: affinity matrix, (num_graph, num_graph, num_node^2, num_node^2)
-  :param X: matching results, X[:-1, :-1] is the matching results obtained by last iteration of MGM-SPFA,
-            X[num_graph,:] and X[:,num_graph] is obtained via two-graph matching solver(RRWM), We suppose the last
-            graph is the new coming graph. (num_graph, num_graph, num_node, num_node)
-  :param num_graph: number of graph, int
-  :param num_node: number of node, int
-  :return: X, matching results, match graph_m to {graph_1, ... , graph_m-1)
-  """
-  q = []
-  outnumber = 0
-  [q.append(i) for i in range(num_graph - 1)]
-  while len(q) > 0:
-    Gx = q[0]
-    del q[0]
-    outnumber += 1
+    """
+    :param K: affinity matrix, (num_graph, num_graph, num_node^2, num_node^2)
+    :param X: matching results, X[:-1, :-1] is the matching results obtained by last iteration of MGM-SPFA,
+              X[num_graph,:] and X[:,num_graph] is obtained via two-graph matching solver(RRWM), We suppose the last
+              graph is the new coming graph. (num_graph, num_graph, num_node, num_node)
+    :param num_graph: number of graph, int
+    :param num_node: number of node, int
+    :return: X, matching results, match graph_m to {graph_1, ... , graph_m-1)
+    """
 
-    Xopt = np.matmul(X[:, Gx, None], X[Gx, None, :])  # X_opt[y,N]=X[y,x]·X[x,N]
-    for y in range(num_graph - 1):
-      if y == Gx:
-        continue
-      Sorg = (1 - LAMBDA_SPFA) * cal_affinity_score_single(X[y, -1], K[y, -1]) + LAMBDA_SPFA * cal_pairwise_consistency_single(X, y, -1)
-      Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score_single(Xopt[y, -1], K[y, -1]) + LAMBDA_SPFA * cal_pairwise_consistency_single(Xopt, y, -1)
-      if Sorg < Sopt:
-        X[y, -1] = Xopt[y, -1]
-        if y not in q:
-          q.append(y)
-    if outnumber > num_graph ** 2:
-      break
+    q = [i for i in range(num_graph - 1)]
+    outnumber = 0
+    while len(q) > 0:
+        Gx = q[0]
+        del q[0]
+        outnumber += 1
+        Xopt = np.matmul(X[:, Gx, None], X[Gx, None, :])  # X_opt[y,N]=X[y,x]·X[x,N]
+        for y in range(num_graph - 1):
+            if y == Gx:
+                continue
+            Sorg = (1 - LAMBDA_SPFA) * cal_affinity_score_single(X[y, -1], K[y, -1]) + \
+                   LAMBDA_SPFA * cal_pairwise_consistency_single(X, y, -1)
+            Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score_single(Xopt[y, -1], K[y, -1]) + \
+                   LAMBDA_SPFA * cal_pairwise_consistency_single(Xopt, y, -1)
+            if Sorg < Sopt:
+                X[y, -1] = Xopt[y, -1]
+                if y not in q:
+                    q.append(y)
+        if outnumber > num_graph ** 2:
+            break
 
-  pairwise_consistency = cal_pairwise_consistency(X)
-  Xopt = np.matmul(X[:, num_graph - 1][:, None], X[num_graph - 1, :][None, ...])  # X_opt[x,y]=X[x,N]·X[N,y]
-  Sorg = (1 - LAMBDA_SPFA) * cal_affinity_score(X, K) + LAMBDA_SPFA * pairwise_consistency  # sqrt for pc
-  Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score(Xopt, K) + LAMBDA_SPFA * np.sqrt(
+    pairwise_consistency = cal_pairwise_consistency(X)
+    Xopt = np.matmul(X[:, num_graph - 1][:, None], X[num_graph - 1, :][None, ...])  # X_opt[x,y]=X[x,N]·X[N,y]
+    Sorg = (1 - LAMBDA_SPFA) * cal_affinity_score(X, K) + LAMBDA_SPFA * pairwise_consistency  # sqrt for pc
+    Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score(Xopt, K) + LAMBDA_SPFA * np.sqrt(
         np.matmul(pairwise_consistency[:, num_graph - 1][:, None], pairwise_consistency[num_graph - 1, :][None, ...]))
-  update = (Sopt > Sorg)[:, :, None, None]
-  update[num_graph - 1] = False
-  update[:, num_graph - 1] = False  # Gx, Gy in H\GN
-  for i in range(num_graph):
-      update[i, i] = False
-  X = update * Xopt + (1 - update) * X
+    update = (Sopt > Sorg)[:, :, None, None]
+    update[num_graph - 1] = False
+    update[:, num_graph - 1] = False  # Gx, Gy in H\GN
+    update[np.diag_indices(num_graph)] = False
+    X = update * Xopt + (1 - update) * X
 
-  return X
+    return X
 
 ```
 
 Here we use iteration instead of matrix operation to update the matches, because matrix operation has some redundancies: all the pairwise `X_opt[i,j]` are calculated, while only `X_opt[i,N]` is needed. Through experiments, we find that using iteration is more efficient than matrix operation in mgm-spfa. 
 
 + **FAST-SPFA**
+
 Fast-SPFA is based on MGM-SPFA. But instead of doing MGM-SPFA on all of the graphs, Fast-SPFA randomly partition the graphs into several clusters and doing MGM-SPFA-like update on each clusters instead. In this part, all clusters updates match information by the newly arrived graph. Then in the second part, all graph updates their match to each other (regardless of clusters) given the newly arrived graph.
 
 <center><img src="imgs/fast_spfa.png" width=50%/>
@@ -179,63 +179,69 @@ Fast-SPFA is based on MGM-SPFA. But instead of doing MGM-SPFA on all of the grap
 
 ```python
 def fast_spfa(K, X, num_graph, num_node):
-  """
-  :param K: affinity matrix, (num_graph, num_graph, num_node^2, num_node^2)
-  :param X: matching results, X[:-1, :-1] is the matching results obtained by last iteration of MGM-SPFA,
-            X[num_graph,:] and X[:,num_graph] is obtained via two-graph matching solver(RRWM), We suppose the last
-            graph is the new coming graph. (num_graph, num_graph, num_node, num_node)
-  :param num_graph: number of graph, int
-  :param num_node: number of node, int
-  :return: X, matching results, match graph_m to {graph_1, ... , graph_m-1)
-  """
-  M = max(1, num_graph // CMIN)
+    """
+    :param K: affinity matrix, (num_graph, num_graph, num_node^2, num_node^2)
+    :param X: matching results, X[:-1, :-1] is the matching results obtained by last iteration of MGM-SPFA,
+              X[num_graph,:] and X[:,num_graph] is obtained via two-graph matching solver(RRWM), We suppose the last
+              graph is the new coming graph. (num_graph, num_graph, num_node, num_node)
+    :param num_graph: number of graph, int
+    :param num_node: number of node, int
+    :return: X, matching results, match graph_m to {graph_1, ... , graph_m-1)
+    """
+    M = max(1, num_graph // CMIN)
 
-  for ci in range(M):
-    if ci < M - 1:
-      coord = [i for i in range(ci * CMIN, (ci + 1) * CMIN)]
-      if num_graph - 1 not in coord:
-        coord.append(num_graph - 1)
-    else:
-      coord = [i for i in range(ci * CMIN, num_graph)]
-    Xc = X[coord, ...][:, coord]
-    Kc = K[coord, ...][:, coord]
+    for k in range(num_graph):
+        Xopt = np.matmul(X[:, k, None], X[k, None, :])
+        Sorg = cal_affinity_score(X, K)
+        Sopt = cal_affinity_score(Xopt, K)
 
-    q = []
-    outnumber = 0
-    [q.append(i) for i in range(len(coord) - 1)]
-    while len(q) > 0:
-      Gx = q[0]
-      del q[0]
-      outnumber += 1
+        update = (Sopt > Sorg)[:, :, None, None]
+        update[np.diag_indices(num_graph)] = False
+        X = update * Xopt + (1 - update) * X
 
-      Xopt = np.matmul(Xc[:, Gx, None], Xc[Gx, None, :])  # X_opt[y,N]=X[y,x]·X[x,N]
-      for y in range(len(coord) - 1):
-        if y == Gx:
-          continue
-        Sorg = (1 - LAMBDA_FAST) * cal_affinity_score_single(Xc[y, -1], Kc[y, -1]) + \
-                LAMBDA_FAST * cal_pairwise_consistency_single(Xc, y, -1)
-        Sopt = (1 - LAMBDA_FAST) * cal_affinity_score_single(Xopt[y, -1], Kc[y, -1]) + \
-                LAMBDA_FAST * cal_pairwise_consistency_single(Xopt, y, -1)
-        if Sorg < Sopt:
-          Xc[y, -1] = Xopt[y, -1]
-          if y not in q:
-            q.append(y)
-      if outnumber > CMIN ** 2:
-        break
+    for ci in range(M):
+        if ci < M - 1:
+            coord = [i for i in range(ci * CMIN, (ci + 1) * CMIN)]
+            if num_graph - 1 not in coord:
+                coord.append(num_graph - 1)
+        else:
+            coord = [i for i in range(ci * CMIN, num_graph)]
+        Xc = X[coord, ...][:, coord]
+        Kc = K[coord, ...][:, coord]
 
-  pairwise_consistency = cal_pairwise_consistency(X)
-  Xopt = np.matmul(X[:, num_graph - 1][:, None], X[num_graph - 1, :][None, ...])  # X_opt[x,y]=X[x,N]·X[N,y]
-  Sorg = (1 - LAMBDA_FAST) * cal_affinity_score(X, K) + LAMBDA_FAST * pairwise_consistency  # sqrt for pc
-  Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score(Xopt, K) + LAMBDA_SPFA * np.sqrt(
+        q = [i for i in range(len(coord) - 1)]
+        outnumber = 0
+        while len(q) > 0:
+            Gx = q[0]
+            del q[0]
+            outnumber += 1
+            Xopt = np.matmul(Xc[:, Gx, None], Xc[Gx, None, :])  # X_opt[y,N]=X[y,x]·X[x,N]
+            for y in range(len(coord) - 1):
+                if y == Gx:
+                    continue
+                Sorg = (1 - LAMBDA_FAST) * cal_affinity_score_single(Xc[y, -1], Kc[y, -1]) + \
+                       LAMBDA_FAST * cal_pairwise_consistency_single(Xc, y, -1)
+                Sopt = (1 - LAMBDA_FAST) * cal_affinity_score_single(Xopt[y, -1], Kc[y, -1]) + \
+                       LAMBDA_FAST * cal_pairwise_consistency_single(Xopt, y, -1)
+                if Sorg < Sopt:
+                    Xc[y, -1] = Xopt[y, -1]
+                    if y not in q:
+                        q.append(y)
+            if outnumber > CMIN ** 2:
+                break
+
+    pairwise_consistency = cal_pairwise_consistency(X)
+    Xopt = np.matmul(X[:, num_graph - 1][:, None], X[num_graph - 1, :][None, ...])  # X_opt[x,y]=X[x,N]·X[N,y]
+    Sorg = (1 - LAMBDA_FAST) * cal_affinity_score(X, K) + LAMBDA_FAST * pairwise_consistency  # sqrt for pc
+    Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score(Xopt, K) + LAMBDA_SPFA * np.sqrt(
         np.matmul(pairwise_consistency[:, num_graph - 1][:, None], pairwise_consistency[num_graph - 1, :][None, ...]))
-  update = (Sopt > Sorg)[:, :, None, None]
-  update[num_graph - 1] = False
-  update[:, num_graph - 1] = False  # Gx, Gy in H\GN
-  for i in range(num_graph):
-      update[i, i] = False
-  X = update * Xopt + (1 - update) * X
+    update = (Sopt > Sorg)[:, :, None, None]
+    update[num_graph - 1] = False
+    update[:, num_graph - 1] = False  # Gx, Gy in H\GN
+    update[np.diag_indices(num_graph)] = False
+    X = update * Xopt + (1 - update) * X
 
-  return X
+    return X
 
 ```
 
@@ -257,6 +263,7 @@ We would like to keep the above two here and research more thoroughly in the nex
 
 -
 ### 3. Results Screenshots
+
 <center>
 <table>
 <thead>
@@ -406,6 +413,7 @@ We would like to keep the above two here and research more thoroughly in the nex
 </table>
 
 </center>
+
 <center><img src="imgs/floyd_res.png" width=60%/>
 
 <font color="grey">Offline test using MGM-floyd passed</font>
@@ -420,3 +428,5 @@ We would like to keep the above two here and research more thoroughly in the nex
 
 <font color="grey">Online test using Fast-SPFA passed</font>
 </center>
+
+P.S. Our experiments is run on Intel(R) Core(TM) i7-8565U CPU @ 1.80GHz  1.99GHz, 16GB RAM.
