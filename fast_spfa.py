@@ -68,9 +68,9 @@ def fast_spfa(K, X, num_graph, num_node):
     pairwise_consistency = cal_pairwise_consistency(X)
     Xopt = np.matmul(X[:, num_graph - 1][:, None], X[num_graph - 1, :][None, ...])  # X_opt[x,y]=X[x,N]·X[N,y]
     Sorg = (1 - LAMBDA_FAST) * cal_affinity_score(X, K) + LAMBDA_FAST * pairwise_consistency  # sqrt for pc
-    # Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score(Xopt, K) + LAMBDA_SPFA * np.sqrt(
-    #     np.matmul(pairwise_consistency[:, num_graph - 1][:, None], pairwise_consistency[num_graph - 1, :][None, ...]))
-    Sopt = (1 - LAMBDA_FAST) * cal_affinity_score(Xopt, K) + LAMBDA_FAST * cal_pairwise_consistency(Xopt)
+    Sopt = (1 - LAMBDA_SPFA) * cal_affinity_score(Xopt, K) + LAMBDA_SPFA * np.sqrt(
+        np.matmul(pairwise_consistency[:, num_graph - 1][:, None], pairwise_consistency[num_graph - 1, :][None, ...]))
+    # Sopt = (1 - LAMBDA_FAST) * cal_affinity_score(Xopt, K) + LAMBDA_FAST * cal_pairwise_consistency(Xopt)
     update = (Sopt > Sorg)[:, :, None, None]
     update[num_graph - 1] = False
     update[:, num_graph - 1] = False  # Gx, Gy in H\GN
