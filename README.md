@@ -1,10 +1,8 @@
 # EE359-Multi-Graph-Matching
-Python implementation of three algorithms in paper "Unifying Offline and Online Multi-graph Matching via Finding Shortest Paths on Supergraph". Homework of EE359, Prof. Junchi Yan.
 
+**If you prefer a nice result (shortest running time & highest accuracy), check it out [here](https://github.com/MarkDana/EE359-Multi-Graph-Matching/tree/a17d3af1d1224564369082c9c0a210afd1e4dc81).**
 <center>
 #EE359 HW Report
-###戴昊悦 李竞宇
-###517030910{288,318}
 -
 </center>
 
