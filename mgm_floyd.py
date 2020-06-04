@@ -11,7 +11,9 @@ def cal_affinity_score(X, K):
     :return: normalized affinity score, (num_graph, num_graph)
     """
     n, _, m, _ = X.shape
-    vx = np.reshape(X, newshape=(n, n, -1, 1))
+    # UPDATE 0604: this is column vectorize
+    XT = X.transpose((0, 1, 3, 2))
+    vx = np.reshape(XT, newshape=(n, n, -1, 1))
     vxT = vx.transpose((0, 1, 3, 2))
     affinity_score = np.matmul(np.matmul(vxT, K), vx)  # in shape (n, n, 1, 1)
     normalized_affinity_score = affinity_score.reshape(n, n) / X0

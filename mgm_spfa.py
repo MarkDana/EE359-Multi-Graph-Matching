@@ -23,7 +23,8 @@ def cal_affinity_score_single(X, K):
     :return: normalized affinity score, (1,)
     """
     m, _ = X.shape
-    vx = np.reshape(X, newshape=(-1, 1))
+    # UPDATE 0604: np.reshape(X.T, newshape=(-1, 1)) this is column vectorize
+    vx = np.reshape(X.T, newshape=(-1, 1))
     vxT = vx.transpose((1, 0))
     affinity_score = np.matmul(np.matmul(vxT, K), vx)
     normalized_affinity_score = affinity_score[0, 0] / X0
