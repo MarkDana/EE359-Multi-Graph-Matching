@@ -1,8 +1,10 @@
 # EE359-Multi-Graph-Matching
+Python implementation of three algorithms in paper "Unifying Offline and Online Multi-graph Matching via Finding Shortest Paths on Supergraph". Homework of EE359, Prof. Junchi Yan.
 
-**If you prefer a nice result (shortest running time & highest accuracy), check it out [here](https://github.com/MarkDana/EE359-Multi-Graph-Matching/tree/a17d3af1d1224564369082c9c0a210afd1e4dc81).**
 <center>
 #EE359 HW Report
+###戴昊悦 李竞宇
+###517030910{288,318}
 -
 </center>
 
@@ -31,10 +33,12 @@ def cal_affinity_score(X, K):
     :return: normalized affinity score, (num_graph, num_graph)
     """
     n, _, m, _ = X.shape
-    vx = np.reshape(X, newshape=(n, n, -1, 1))
+    # UPDATE: this is column vectorize
+    XT = X.transpose((0, 1, 3, 2))
+    vx = np.reshape(XT, newshape=(n, n, -1, 1))
     vxT = vx.transpose((0, 1, 3, 2))
     affinity_score = np.matmul(np.matmul(vxT, K), vx)  # in shape (n, n, 1, 1)
-    normalized_affinity_score = affinity_score.reshape(n, n) / X0)
+    normalized_affinity_score = affinity_score.reshape(n, n) / X0
     return normalized_affinity_score
 ```
 Note that affinity score is normalized to range `(0,1]` to be consistent with pairwise consistency. We use the normalization factor `X0` to be the maximal affinity score of the raw input $X$, as proposed in CAO.
